@@ -1,17 +1,39 @@
 import "dotenv/config";
 import { StakingScriptData, stakingTransaction, initBTCCurve } from "./dist/index.js";
 import * as ecc from "@bitcoin-js/tiny-secp256k1-asmjs";
-import { payments, opcodes, script, networks } from "bitcoinjs-lib";
-import { ECPairFactory } from "ecpair";
+import { payments, opcodes, script, networks, crypto } from "bitcoinjs-lib";
+// import { ECPairFactory } from "ecpair";
+import * as bip39 from 'bip39';
+import { BIP32Factory } from 'bip32';
 import { covenantPks, covenantThreshold, finalityProviders, magicBytes, minUnbondingTime } from "./staking_params.js";
 import { toXOnly } from 'bitcoinjs-lib/src/psbt/bip371.js';
+// import mempoolJS from "@mempool/mempool.js";
 
-const stakerPrivateKey = process.env.PRIVATE_KEY;
+// const stakerPrivateKey = process.env.PRIVATE_KEY;
+
+const mnemonic = process.env.mnemonic;
 // console.log("Staker private key: ", stakerPrivateKey);
+const validatorMpcPk = process.env.VALIDATOR_MPC_PK;
+console.log("Validator MPC public key: ", validatorMpcPk);
 
 const network = networks.testnet;
 
-async function main(validatorMpcPk, {
+// const { bitcoin: { transactions, addresses } } = mempoolJS({
+//     hostname: 'mempool.space',
+//     network: "signet"
+// });
+
+async function getKey() {
+    const bip32 = BIP32Factory(ecc);
+    const seed = await bip39.mnemonicToSeed(mnemonic);
+    const rootKey = bip32.fromSeed(seed);
+    const path = `m/86'/0'/0'/0/0`; // Path to first child of receiving wallet on first account
+    const childNode = rootKey.derivePath(path);
+    return childNode;
+}
+
+async function main({
+    validatorMpcPk,
     stakingDuration,
     stakingAmount,
     inputUTXOs,
@@ -20,15 +42,22 @@ async function main(validatorMpcPk, {
 
     initBTCCurve();
 
-    const ECPair = ECPairFactory(ecc);
+    // const ECPair = ECPairFactory(ecc);
+    // const stakerKeyPair = ECPair.fromPrivateKey(Buffer.from(stakerPrivateKey, 'hex'));
 
-    const stakerKeyPair = ECPair.fromPrivateKey(Buffer.from(stakerPrivateKey, 'hex'));
+    const keys = await getKey(mnemonic);
 
-    const stakerPk = toXOnly(stakerKeyPair.publicKey);
-    console.log("Staker public key: ", stakerPk.toString('hex'));
+    const stakerPk = toXOnly(keys.publicKey);
+    // console.log("Staker public key: ", stakerPk);
+    // console.log("Staker public key: ", stakerPk.toString('hex'));
 
     const { address } = payments.p2tr({ internalPubkey: stakerPk, network });
-    console.log("Taproot address: ", address);
+    console.log("staker taproot address: ", address);
+
+    // const addressTxsUtxo = await addresses.getAddressTxsUtxo({ address });
+    // const tx = await transactions.getTx({ txid });
+
+    // const { txInputs: inputUTXOs, inputsSum } = findUTXOInput(addressTxsUtxo, 50000, scriptPubKey);
 
     const stakingScriptData = new StakingScriptData(
         stakerPk,
@@ -48,19 +77,26 @@ async function main(validatorMpcPk, {
         dataEmbedScript,
     } = stakingScriptData.buildScripts();
 
-    const frostSlashingScript = script.compile([
-        validatorMpcPk,
-        opcodes.OP_CHECKSIGVERIFY,
-    ]);
+    const scripts = {
+        timelockScript,
+        unbondingScript,
+        slashingScript,
+        dataEmbedScript,
+    }
+
+    if (validatorMpcPk) {
+        const frostSlashingScript = script.compile([
+            validatorMpcPk,
+            opcodes.OP_CHECKSIGVERIFY,
+        ]);
+        scripts.frostSlashingScript = frostSlashingScript;
+        console.log("Found validator MPC public key: ", validatorMpcPk);
+    } else {
+        console.log("No validator MPC public key");
+    }
 
     const { psbt, fee } = stakingTransaction(
-        {
-            timelockScript,
-            unbondingScript,
-            slashingScript,
-            dataEmbedScript,
-            // frostSlashingScript,
-        },
+        scripts,
         stakingAmount,
         address,
         inputUTXOs,
@@ -70,13 +106,45 @@ async function main(validatorMpcPk, {
     );
 
     // staker signs the transaction
-    psbt.signAllInputs(stakerKeyPair)
+    // psbt.signAllInputs(stakerKeyPair)
+    const tweakedKeys = keys.tweak(
+        crypto.taggedHash('TapTweak', stakerPk),
+    );
+    // unsignedStakingTx.signInput(0, tweakedKeys)
+    psbt.signAllInputs(tweakedKeys);
+
     psbt.finalizeAllInputs();
     const stakingTx = psbt.extractTransaction();
     console.log("Transaction: ", stakingTx.toHex());
 }
 
-const validatorMpcPk = process.env.VALIDATOR_MPC_PK;
+function findUTXOInput(
+    addressTxsUtxo,
+    tatalAmount,
+    scriptPubKey,
+) {
+    let value = 0;
+    const txInputs = [];
+    for (let i = 0; i < addressTxsUtxo.length; i += 1) {
+        const ele = addressTxsUtxo[i];
+        txInputs.push({
+            txid: ele.txid,
+            vout: ele.vout,
+            value: ele.value,
+            scriptPubKey,
+        });
+        value += ele.value;
+        if (value >= tatalAmount) {
+            return {
+                txInputs,
+                inputsSum: value,
+            };
+        }
+    }
+    throw new Error("find utxo error");
+}
+
+
 const stakingDuration = 1440;
 const stakingAmount = 50000;
 // const stakingFee = 800;
@@ -111,7 +179,15 @@ const inputUTXOs = [
     }
 ];
 
-main(validatorMpcPk, {
+main({
+    stakingDuration,
+    stakingAmount,
+    inputUTXOs,
+    feeRate
+});
+
+main({
+    validatorMpcPk,
     stakingDuration,
     stakingAmount,
     inputUTXOs,

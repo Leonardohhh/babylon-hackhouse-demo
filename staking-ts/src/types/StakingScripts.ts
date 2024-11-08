@@ -3,6 +3,7 @@ export interface StakingScripts {
   timelockScript: Buffer;
   unbondingScript: Buffer;
   slashingScript: Buffer;
+  frostSlashingScript?: Buffer;
   unbondingTimelockScript: Buffer;
   dataEmbedScript: Buffer;
 }
