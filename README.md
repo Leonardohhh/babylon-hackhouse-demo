@@ -12,8 +12,20 @@
 > [!WARNING]
 > This is just a demo for Hackathon . Code is not meant to be in any proudction setting. For more information please refer our submission [page](https://dorahacks.io/buidl/19063/milestones) 
 
-###
+### generate a multi-party key shares
 
+```
+cd frost
+# generate 3/5 key shares
+RUST_LOG=debug cargo run generate
+
+==>  key shares are output in my_map.json
+
+# verify checks
+RUST_LOG=debug cargo run verify
+```
+
+### create a staking tx with the added path
 ```
 ```
 
