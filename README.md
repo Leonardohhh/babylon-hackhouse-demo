@@ -49,8 +49,9 @@ Transaction:  020000000001012a......2bd382200000000
 
 Under the hook, we added an additional path over the staking script
 
-https://github.com/Leonardohhh/babylon-hackhouse-demo/blob/7957e53d9e35504512827f5ebe4aef189430b55c/staking-ts/src/types/StakingScripts.ts#L2-L9
+https://github.com/Leonardohhh/babylon-hackhouse-demo/blob/510e0c882c2bffc5442e88ed839de7268c42f8af/staking-ts/src/index.ts#L56-L63
 
+If this validatorMpcKey is left emptied, it would be the same as a normal staking tx.
 
 ## Why
 Babylon creates a BTC staking platform where a pubkey owner (finalization provider) is confined from double-signing. This guarantee leads to finalization guarantee. 
