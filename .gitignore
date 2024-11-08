@@ -1,3 +1,5 @@
 frost/target
 .env
 my_map.json
+
+.DS_Store
