@@ -103,6 +103,7 @@ fn generate_keys() -> Result<(), Box<dyn std::error::Error>> {
     let pubkey = bitcoin::secp256k1::PublicKey::from_slice(&pubkey_buffer)?;
     let internal_key = UntweakedPublicKey::from(pubkey);
     let taproot_address = Address::p2tr(&bitcoin::secp256k1::Secp256k1::new(), internal_key, None, Network::Bitcoin);
+    info!("Pubkey : {}", internal_key);
     info!("Taproot address: {}", taproot_address);
 
     // Verifies the secret shares from the dealer and store them in a BTreeMap.
