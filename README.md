@@ -31,7 +31,26 @@ RUST_LOG=debug cargo run verify
 
 ### create a staking tx with the added path
 ```
+cd staking-ts/
+node main.js
+
+# create a staking script WITH the validator MPC path
+staker taproot address:  tb1pwzdt554fhylw22ujlc2pekpwtwnpj370whskaecnwz8mpqpl9ffqqmjddt
+Validator MPC public key:  a87edc864cd5160b489539bbf289a30eac12043668c1078ef074f91f74c8ac32
+Transaction:  02000000....38c0d300000000
+
+
+# create a staking script WITH the validator MPC path
+staker taproot address:  tb1pwzdt554fhylw22ujlc2pekpwtwnpj370whskaecnwz8mpqpl9ffqqmjddt
+No validator MPC public key
+Transaction:  020000000001012a......2bd382200000000
+
 ```
+
+Under the hook, we added an additional path over the staking script
+
+https://github.com/Leonardohhh/babylon-hackhouse-demo/blob/7957e53d9e35504512827f5ebe4aef189430b55c/staking-ts/src/types/StakingScripts.ts#L2-L9
+
 
 ## Why
 Babylon creates a BTC staking platform where a pubkey owner (finalization provider) is confined from double-signing. This guarantee leads to finalization guarantee. 
