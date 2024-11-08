@@ -15,14 +15,18 @@
 ### generate a multi-party key shares
 
 ```
-cd frost
+cd frost/
 # generate 3/5 key shares
 RUST_LOG=debug cargo run generate
 
-==>  key shares are output in my_map.json
+[2024-11-08T03:56:06Z INFO  frost] Taproot address: bc1pdyug6ukgzgpyxtl3kdv4wyjyext638u6saq7ejyp0a0mljdlkgtsdke3vx
+
+==>  corresonding key shares are output in my_map.json
 
 # verify checks
 RUST_LOG=debug cargo run verify
+[2024-11-08T03:58:55Z INFO  frost] Group signature: "022f77348c6d63a1b918954d6303a37f6cbd511a332f41f7ac8fca585a45aa420f464dd3c65036a6983d76e958873194010974df9bfd0281b4d5f04303bf0da0c5"
+[2024-11-08T03:58:55Z INFO  frost] Signature valid: true
 ```
 
 ### create a staking tx with the added path

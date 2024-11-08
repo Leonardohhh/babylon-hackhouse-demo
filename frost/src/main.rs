@@ -273,8 +273,7 @@ fn generate_signature() -> Result<(), Box<dyn std::error::Error>> {
 
     // Aggregate (also verifies the signature shares)
     let group_signature = frost::aggregate(&signing_package, &signature_shares, &pubkey_package)?;
-    info!("Group signature1: {:?}", group_signature.serialize()?);
-    info!("Group signature2: {:?}", hex::encode(group_signature.serialize()?));
+    info!("Group signature: {:?}", hex::encode(group_signature.serialize()?));
 
     // Check that the threshold signature can be verified by the group public
     // key (the verification key).
