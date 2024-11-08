@@ -92,12 +92,18 @@ fn generate_keys() -> Result<(), Box<dyn std::error::Error>> {
     // let secp = Secp256k1::verification_only();
 
     let mut rng = thread_rng();
-    let (shares, _pubkey_package) = frost::keys::generate_with_dealer(
+    let (shares, pubkey_package) = frost::keys::generate_with_dealer(
         MAX_SIGNERS,
         MIN_SIGNERS,
         frost::keys::IdentifierList::Default,
         &mut rng,
     )?;
+        
+    let pubkey_buffer = pubkey_package.verifying_key().serialize()?;
+    let pubkey = bitcoin::secp256k1::PublicKey::from_slice(&pubkey_buffer)?;
+    let internal_key = UntweakedPublicKey::from(pubkey);
+    let taproot_address = Address::p2tr(&bitcoin::secp256k1::Secp256k1::new(), internal_key, None, Network::Bitcoin);
+    info!("Taproot address: {}", taproot_address);
 
     // Verifies the secret shares from the dealer and store them in a BTreeMap.
     // In practice, the KeyPackages must be sent to its respective participants
